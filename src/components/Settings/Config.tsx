@@ -813,6 +813,14 @@ export function Config({
     value: mainLoopModel === null ? 'Default (recommended)' : mainLoopModel,
     type: 'managedEnum' as const,
     onChange: onChangeMainModelConfig
+  }, {
+    id: 'llmConfig',
+    label: 'LLM Configuration',
+    value: 'configured',
+    type: 'managedEnum' as const,
+    onChange() {
+      // Handled via /setup command
+    }
   }, ...(isConnectedToIde ? [{
     id: 'diffTool',
     label: 'Diff tool',

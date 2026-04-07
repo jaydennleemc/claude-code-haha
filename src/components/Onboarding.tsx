@@ -16,10 +16,11 @@ import { ApproveApiKey } from './ApproveApiKey.js';
 import { ConsoleOAuthFlow } from './ConsoleOAuthFlow.js';
 import { Select } from './CustomSelect/select.js';
 import { WelcomeV2 } from './LogoV2/WelcomeV2.js';
+import { LlmSetup } from './LlmSetup.js';
 import { PressEnterToContinue } from './PressEnterToContinue.js';
 import { ThemePicker } from './ThemePicker.js';
 import { OrderedList } from './ui/OrderedList.js';
-type StepId = 'preflight' | 'theme' | 'oauth' | 'api-key' | 'security' | 'terminal-setup';
+type StepId = 'preflight' | 'theme' | 'llm-setup' | 'oauth' | 'api-key' | 'security' | 'terminal-setup';
 interface OnboardingStep {
   id: StepId;
   component: React.ReactNode;
@@ -62,6 +63,12 @@ export function Onboarding({
       <ThemePicker onThemeSelect={handleThemeSelection} showIntroText={true} helpText="To change this later, run /theme" hideEscToCancel={true} skipExitHandling={true} // Skip exit handling as Onboarding already handles it
     />
     </Box>;
+  const llmSetupStep = (
+    <LlmSetup 
+      onComplete={goToNextStep} 
+      onSkip={goToNextStep}
+    />
+  );
   const securityStep = <Box flexDirection="column" gap={1} paddingLeft={1}>
       <Text bold>Security notes:</Text>
       <Box flexDirection="column" width={70}>
@@ -123,6 +130,10 @@ export function Onboarding({
   steps.push({
     id: 'theme',
     component: themeStep
+  });
+  steps.push({
+    id: 'llm-setup',
+    component: llmSetupStep
   });
   if (apiKeyNeedingApproval) {
     steps.push({

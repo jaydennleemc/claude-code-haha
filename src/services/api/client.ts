@@ -28,6 +28,7 @@ import {
   getVertexRegionForModel,
   isEnvTruthy,
 } from '../../utils/envUtils.js'
+import { getGlobalConfig } from '../../utils/config.js'
 
 /**
  * Environment variables for different client types:
@@ -69,6 +70,25 @@ import {
  * 3. Default region from config
  * 4. Fallback region (us-east5)
  */
+
+function getApiKeyFromConfig(): string | undefined {
+  const config = getGlobalConfig()
+  if (config.llmConfig?.provider) {
+    switch (config.llmConfig.provider) {
+      case 'anthropic':
+        return process.env.ANTHROPIC_API_KEY
+      case 'openai':
+        return process.env.OPENAI_API_KEY
+      case 'openrouter':
+        return process.env.OPENROUTER_API_KEY
+      case 'minimax':
+        return process.env.MINIMAX_API_KEY
+      default:
+        return process.env.ANTHROPIC_API_KEY
+    }
+  }
+  return undefined
+}
 
 function createStderrLogger(): ClientOptions['logger'] {
   return {
@@ -298,16 +318,18 @@ export async function getAnthropicClient({
   }
 
   // Determine authentication method based on available tokens
+  const config = getGlobalConfig()
   const clientConfig: ConstructorParameters<typeof Anthropic>[0] = {
-    apiKey: isClaudeAISubscriber() ? null : apiKey || getAnthropicApiKey(),
+    apiKey: isClaudeAISubscriber() ? null : apiKey || getAnthropicApiKey() || getApiKeyFromConfig() || process.env.ANTHROPIC_API_KEY,
     authToken: isClaudeAISubscriber()
       ? getClaudeAIOAuthTokens()?.accessToken
       : undefined,
-    // Set baseURL from OAuth config when using staging OAuth
-    ...(process.env.USER_TYPE === 'ant' &&
-    isEnvTruthy(process.env.USE_STAGING_OAUTH)
-      ? { baseURL: getOauthConfig().BASE_API_URL }
-      : {}),
+    ...(config.llmConfig?.baseUrl
+      ? { baseURL: config.llmConfig.baseUrl }
+      : process.env.USER_TYPE === 'ant' &&
+        isEnvTruthy(process.env.USE_STAGING_OAUTH)
+        ? { baseURL: getOauthConfig().BASE_API_URL }
+        : {}),
     ...ARGS,
     ...(isDebugToStdErr() && { logger: createStderrLogger() }),
   }

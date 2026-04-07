@@ -180,6 +180,23 @@ export type DiffTool = 'terminal' | 'auto'
 
 export type OutputStyle = string
 
+export type LlmProvider = 
+  | 'anthropic' 
+  | 'openai' 
+  | 'openrouter' 
+  | 'google' 
+  | 'azure' 
+  | 'aws' 
+  | 'minimax' 
+  | 'ollama'
+  | 'custom';
+
+export interface LlmConfig {
+  provider: LlmProvider;
+  baseUrl?: string;
+  model?: string;
+}
+
 export type GlobalConfig = {
   /**
    * @deprecated Use settings.apiKeyHelper instead.
@@ -310,10 +327,11 @@ export type GlobalConfig = {
     { grove_enabled: boolean; timestamp: number }
   >
 
-  // Guest passes upsell tracking
-  passesUpsellSeenCount?: number // Number of times the guest passes upsell has been shown
-  hasVisitedPasses?: boolean // Whether the user has visited /passes command
-  passesLastSeenRemaining?: number // Last seen remaining_passes count — reset upsell when it increases
+  passesUpsellSeenCount?: number
+  hasVisitedPasses?: boolean
+  passesLastSeenRemaining?: number
+
+  llmConfig?: LlmConfig
 
   // Overage credit grant upsell tracking (keyed by org UUID — multi-org users).
   // Inlined shape (not import()) because config.ts is in the SDK build surface
