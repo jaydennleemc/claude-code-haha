@@ -83,16 +83,19 @@ CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
 ```bash
 # 交互 TUI 模式（完整界面）
-./bin/claude-haha
+./bin/claude-local
 
 # 无头模式（单次问答）
-./bin/claude-haha -p "your prompt here"
+./bin/claude-local -p "your prompt here"
 
 # 管道输入
-echo "explain this code" | ./bin/claude-haha -p
+echo "explain this code" | ./bin/claude-local -p
 
 # 查看所有选项
-./bin/claude-haha --help
+./bin/claude-local --help
+
+# 或使用 npx（自动处理 PATH）
+npx claude-local
 ```
 
 ---

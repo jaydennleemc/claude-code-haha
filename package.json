@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "bin": {
-    "claude-haha": "./bin/claude-haha"
+    "claude-local": "./bin/claude-local"
   },
   "scripts": {
-    "claude-haha": "bun run ./bin/claude-haha",
-    "start": "bun run ./bin/claude-haha"
+    "claude-local": "bun run ./bin/claude-local",
+    "start": "bun run ./bin/claude-local"
   },
   "dependencies": {
     "@alcalzone/ansi-tokenize": "^0.3.0",
