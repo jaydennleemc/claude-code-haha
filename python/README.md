@@ -4,6 +4,35 @@ A simple, well-structured **Python** implementation of the [Claude Code architec
 
 > Built as a learning reference. Mirrors the core subsystems from the leaked TS source (agent loop, tool orchestration, MCP, skills) but stripped to the essentials.
 
+## API backends
+
+Two interchangeable backends, both implementing the same `APIClient` Protocol:
+
+| Backend | Class | Use when |
+|---|---|---|
+| Anthropic | `AnthropicClient` | You have an Anthropic API key (or a custom proxy) |
+| OpenAI-compatible | `OpenAIClient` | You have LM Studio, OpenRouter, OpenAI, vLLM, or any other `/v1/chat/completions` endpoint |
+
+Selection is driven by the `API_FORMAT` env var, with auto-detection
+fallback (`OPENAI_BASE_URL` containing `:1234` — LM Studio's default port —
+implies OpenAI).
+
+```bash
+# Anthropic (default)
+# .env: ANTHROPIC_API_KEY=sk-ant-xxx
+claude-code-py -p "explain this code"
+
+# LM Studio
+# .env:
+#   OPENAI_API_KEY=lm-studio
+#   OPENAI_BASE_URL=http://localhost:1234/v1
+#   OPENAI_MODEL=deepseek-r1-0528-qwen3-8b
+claude-code-py -p "explain this code"
+
+# Force the format explicitly (overrides auto-detect)
+# .env: API_FORMAT=openai
+```
+
 ## Architecture
 
 ```
@@ -15,7 +44,8 @@ src/claude_code/
 │   ├── context.py     #   Conversation history + token counting + compaction
 │   └── agent.py       #   The think-act-observe loop
 ├── api/               # External boundary
-│   └── client.py      #   Anthropic SDK wrapper (streaming)
+│   ├── client.py      #   AnthropicClient + OpenAIClient (both stream)
+│   └── factory.py     #   select_format() / build_client() — picks the backend
 ├── tools/             # Pluggable tool system
 │   ├── base.py        #   Tool ABC + Registry + @register_tool decorator
 │   ├── permissions.py #   Allow/deny rules
@@ -41,6 +71,17 @@ Each subsystem is **independently testable** and **swappable**:
 
 The `core/` package has **zero I/O dependencies** — it only knows about the `Tool` ABC and the `APIClient` protocol. That's what makes the agent loop testable with a fake API.
 
+### How the dual backend works
+
+The agent loop calls `api.create_message(model=..., system=..., messages=..., tools=...)` — same signature for both backends. Each client handles its own:
+
+- **Tool schema** conversion (Anthropic flat → OpenAI `{"type": "function", "function": {...}}`)
+- **Tool result** conversion (Anthropic user-message-with-blocks → OpenAI `role: "tool"` messages)
+- **Streaming** aggregation (Anthropic SSE `content_block_*` events vs OpenAI `delta.tool_calls[]` with `index` keying for parallel calls)
+- **Stop reason** mapping (`stop` → `end_turn`, `tool_calls` → `tool_use`, `length` → `max_tokens`)
+
+So `core/agent.py` has no idea which backend is in use. Swapping is purely a factory concern.
+
 ## Install
 
 ```bash
@@ -48,7 +89,7 @@ cd python
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env
-# Edit .env to set ANTHROPIC_API_KEY
+# Edit .env — see "API backends" above for Anthropic vs OpenAI/LM Studio setup
 ```
 
 ## Run
