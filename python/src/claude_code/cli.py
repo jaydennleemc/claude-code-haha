@@ -22,7 +22,8 @@ from typing import Sequence
 from dotenv import load_dotenv
 
 from . import __version__
-from .api.client import AnthropicClient, from_env as api_from_env
+from .api.client import APIClient
+from .api.factory import build_client, build_model, select_format
 from .core.agent import Agent, AgentConfig
 from .core.context import Context, ContextConfig
 from .mcp.client import MCPServerConfig, connect_all, parse_server_configs
@@ -62,13 +63,15 @@ async def run(args: argparse.Namespace) -> int:
     """Main async entry. Returns process exit code."""
     # 1. API client
     try:
-        api: AnthropicClient = api_from_env()
+        api: APIClient = build_client()
     except ValueError as e:
+        backend = select_format()
+        env_var = "OPENAI_API_KEY" if backend == "openai" else "ANTHROPIC_API_KEY"
         print(f"error: {e}", file=sys.stderr)
-        print("hint: copy .env.example to .env and set ANTHROPIC_API_KEY", file=sys.stderr)
+        print(f"hint: copy .env.example to .env and set {env_var} (or {env_var}_TOKEN)", file=sys.stderr)
         return 2
 
-    model = os.environ.get("ANTHROPIC_MODEL") or args.model or AnthropicClient.DEFAULT_MODEL
+    model = args.model or build_model()
     console = Console(verbose=args.debug)
 
     # 2. Tool registry: start with builtins, then add MCP tools
@@ -196,7 +199,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        help="Override ANTHROPIC_MODEL from env",
+        help="Override the model name from env (ANTHROPIC_MODEL or OPENAI_MODEL)",
     )
     parser.add_argument(
         "--debug",
