@@ -28,9 +28,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Awaitable, Callable
+from typing import TYPE_CHECKING, Awaitable, Callable
 
-from ..api.client import APIClient, messages_from_history
 from ..tools.base import ToolRegistry, registry
 from ..tools.builtin import is_read_only
 from ..tools.permissions import (
@@ -39,6 +38,11 @@ from ..tools.permissions import (
 )
 from .context import Context
 from .types import AssistantTurn, ToolResult
+
+if TYPE_CHECKING:
+    # Only used as a type hint in __init__; deferred to avoid the
+    # api.client -> core.types -> core.__init__ -> core.agent -> api.client cycle.
+    from ..api.client import APIClient
 
 log = logging.getLogger(__name__)
 
